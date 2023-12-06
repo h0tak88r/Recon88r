@@ -23,13 +23,13 @@ Before using the script, make sure you have the following tools and dependencies
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/yourusername/recon88r.git
+   git clone https://github.com/h0tak88r/Recon88r.git
    ```
 
 2. Navigate to the script directory:
 
    ```bash
-   cd recon88r
+   cd Recon88r
    ```
 
 3. Set up a virtual environment (optional but recommended):
