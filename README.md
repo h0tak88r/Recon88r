@@ -23,13 +23,13 @@ Before using the script, make sure you have the following tools and dependencies
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/yourusername/recon-script.git
+   git clone https://github.com/yourusername/recon88r.git
    ```
 
 2. Navigate to the script directory:
 
    ```bash
-   cd recon-script
+   cd recon88r
    ```
 
 3. Set up a virtual environment (optional but recommended):
@@ -56,7 +56,7 @@ Before using the script, make sure you have the following tools and dependencies
 Run the script with the desired options to perform reconnaissance tasks. Below are some examples:
 
 ```bash
-python recon_script.py -d example.com -se -p -nt -nf -ep -js -xss -wh your_discord_webhook_url
+python recon88r.py -d example.com -se -p -nt -nf -ep -js -xss -wh your_discord_webhook_url
 ```
 
 ### Available Options:
