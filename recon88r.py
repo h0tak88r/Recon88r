@@ -21,6 +21,8 @@ banner ="""
 """
 print(banner)
 
+
+
 # Get the directory of the currently running script
 absolute_path = os.path.dirname(os.path.abspath(__file__))
 
@@ -158,12 +160,12 @@ def subdomain_enumeration(target_domain, perform_passive, perform_active):
             write_subdomains_to_file(subdomains, temp_file.name)
             output_file = f'{subs_directory}/{target_domain}.txt'
             write_subdomains_to_file(subdomains, output_file)
-            print(f'Passive Subdomains saved to {output_file}')
+            print(f'[+] Passive Subdomains saved to {output_file}')
         finally:
             os.unlink(temp_file.name)
 
         # Running subfinder on the target domain
-        print(f'Running passive subdomains using subfinder for {target_domain}')
+        print(f'[+] Running passive subdomains using subfinder for {target_domain}')
         subfinder_output = run_command(["subfinder", "-d", target_domain, "--all", "--silent"])
         if subfinder_output:
             subfinder_file = f"{subs_directory}/subfinder.txt"
@@ -171,7 +173,7 @@ def subdomain_enumeration(target_domain, perform_passive, perform_active):
 
     if perform_active:
         # Actie Subdomain Enumeration using DNS brute forcing with puredns
-        print("Actie Subdomain Enumeration using DNS brute forcing with puredns")
+        print("[+] Actie Subdomain Enumeration using DNS brute forcing with puredns")
         try:
             run_command(["puredns", "bruteforce", f"{absolute_path}/Wordlists/dns/dns_2m.txt", target_domain, "-r", f"{absolute_path}/Wordlists/dns/valid_resolvers.txt", "-w", f"{subs_directory}/dns_bf.txt", "--skip-wildcard-filter", "--skip-validation"])
         except Exception as e:
