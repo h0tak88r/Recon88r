@@ -1,20 +1,52 @@
 import subprocess
 import requests
-from requests import post
 import os
 import re
 import glob
 import argparse
 import tempfile
-import requests
 import concurrent.futures
 
 # The working directory, edit the below line for yours
 absolute_path = os.path.abspath(os.path.expanduser("/workspaces/recon_vps"))
 
-# function to handle running commands and working with pipelines.
-def run_command(command, input_data=None):
-    return subprocess.run(command, input=input_data, stdout=subprocess.PIPE, text=True, check=True)
+# Arguments Functions --------------------------------
+def parse_args():
+    parser = argparse.ArgumentParser(description='Reconnaissance script with various modules.')
+
+    # Specify the available command-line options
+    parser.add_argument('-d', '--domain', type=validate_domain, required=True, help='Target domain for reconnaissance')
+    parser.add_argument('-se', '--subenum', action='store_true', help='Perform subdomain enumeration')
+    parser.add_argument('-p', '--portscan', action='store_true', help='Perform port scanning')
+    parser.add_argument('-nt', '--new-templates', action='store_true', help='Scan with newly added templates to the nuclei templates repo')
+    parser.add_argument('-nf', '--nuclei-full', action='store_true', help='Perform a full nuclei scan')
+    parser.add_argument('-ep', '--exposed-panels', action='store_true', help='Perform Panels dorking with nuclei templates')
+    parser.add_argument('-js', '--js-exposures', action='store_true', help='Perform JS Exposures')
+    parser.add_argument('-sl', '--subs-file', help='Path to the subdomains file')
+    parser.add_argument('-xss', '--xss-scan', action='store_true', help='Perform xss scans')
+    parser.add_argument('-wh', '--webhook', help='Webhook URL for Discord')
+
+    try:
+        return parser.parse_args()
+    except argparse.ArgumentError as e:
+        print(f"Error: {e}")
+        parser.print_help()
+        exit(1)
+
+def run_command(command, input_data=None, timeout=300, capture_output=True):
+    try:
+        result = subprocess.run(command, input=input_data, capture_output=capture_output, text=True, check=True, timeout=timeout)
+        return result.stdout.strip() if capture_output else None
+    except subprocess.CalledProcessError as e:
+        print(f"Error while running command {command}: {e}")
+        return None
+    except subprocess.TimeoutExpired:
+        print(f"Command {command} timed out after {timeout} seconds.")
+        return None
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+        return None
+
 
 def validate_domain(domain):
     """
@@ -30,8 +62,12 @@ def xss_scan(domain):
     Scans a domain for XSS vulnerabilities.
     """
     gau = run_command(["gau", domain])
-    xss_scan  = run_command(["kxss"], input_data= gau.stdout)
-    xss_scan_output = run_command(["notify", "-bulk"], input_data= xss_scan.stdout)
+    if gau:
+        xss_scan_cmd = ["kxss"]
+        xss_scan_output = run_command(xss_scan_cmd, input_data=gau)
+        if xss_scan_output:
+            notify_cmd = ["notify", "-bulk"]
+            run_command(notify_cmd, input_data=xss_scan_output)
 
 def fetch_subdomains(url, domain):
     """
@@ -42,7 +78,8 @@ def fetch_subdomains(url, domain):
         response.raise_for_status()
         pattern = re.compile(rf'((?:[a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9])\.{domain})')
         return set(pattern.findall(response.text))
-    except requests.exceptions.RequestException:
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching subdomains from {url}: {e}")
         return set()
 
 def fetch_all_subdomains(domain):
@@ -70,170 +107,170 @@ def fetch_all_subdomains(domain):
 
     return subdomains
 
-# Arguments Functions --------------------------------
-def parse_args():
-    parser = argparse.ArgumentParser(description='Reconnaissance script with various modules.')
+def write_subdomains_to_file(subdomains, output_file):
+    with open(output_file, 'w') as file:
+        for subdomain in sorted(subdomains):
+            file.write(f'{subdomain}\n')
 
-    # Specify the available command-line options
-    parser.add_argument('-d', '--domain', type=validate_domain, required=True, help='Target domain for reconnaissance')
-    parser.add_argument('-se', '--subenum', action='store_true', help='Perform subdomain enumeration')
-    parser.add_argument('-p', '--portscan', action='store_true', help='Perform port scanning')
-    parser.add_argument('-nt', '--new-templates', action='store_true', help='Scan with newly added templates to the nuclei templates repo')
-    parser.add_argument('-nf', '--nuclei-full', action='store_true', help='Perform a full nuclei scan')
-    parser.add_argument('-ep', '--exposed-panels', action='store_true', help='Perform Panels dorking with nuclei templates')
-    parser.add_argument('-js', '--js-exposures', action='store_true', help='Perform JS Exposures')
-    parser.add_argument('-sl', '--subs-file', help='Path to the subdomains file')
-    parser.add_argument('-xss', '--xss-scan', action='store_true', help='Perform xss scans')
-    parser.add_argument('-wh', '--webhook', help='Webhook URL for Discord')
+def subdomain_enumeration(target_domain):
+    print("[+] Performing subdomain enumeration")
+    print("[+] Passive Subdomain Enumeration ....")
+    
+    subs_directory = f"{absolute_path}/subs/"
+    run_command(["rm", "-r", subs_directory])
+    run_command(["mkdir", subs_directory])
 
+    # Fetch subdomains from all sources
+    subdomains = fetch_all_subdomains(target_domain)
+    
+    # Write subdomains to a file
+    temp_file = tempfile.NamedTemporaryFile(mode='w+', delete=False)
     try:
-        return parser.parse_args()
-    except argparse.ArgumentError as e:
-        print(f"Error: {e}")
-        parser.print_help()
-        exit(1)
-
-def recon(target_domain, perform_subenum=False, perform_portscan=False, perform_nuclei_new=False, perform_nuclei_full=False, perform_exposed_panels=False, perform_js_exposure=False, subs_file=None, perform_xss_scan=False, webhook=None):
-
-    if perform_subenum:
-        print("[+] Performing subdomain enumeration")
-        print("[+] Passive Subdomain Enumeration ....")
-        run_command(["rm", "-r", f"{absolute_path}/subs/"])
-        run_command(["mkdir", f"{absolute_path}/subs/"])
-
-        # Fetch subdomains from all sources
-        subdomains = fetch_all_subdomains(target_domain)
-        
-        # Write subdomains to a file
-        with tempfile.NamedTemporaryFile(mode='w+', delete=False) as tmp_file:
-            tmp_file.writelines(f'{subdomain}\n' for subdomain in sorted(subdomains))
-            tmp_file.flush()
-
-        # Move temporary file to final output file
-        output_file = f'{absolute_path}/subs/{args.domain}.txt'
-        try:
-            with open(output_file, 'x') as file:
-                pass
-        except FileExistsError:
-            pass
-        with open(output_file, 'w') as file:
-            with open(tmp_file.name, 'r') as tmp_file:
-                file.writelines(tmp_file.readlines())
-
+        write_subdomains_to_file(subdomains, temp_file.name)
+        output_file = f'{subs_directory}/{target_domain}.txt'
+        write_subdomains_to_file(subdomains, output_file)
         print(f'Passive Subdomains saved to {output_file}')
 
-        print(f"[+] Running subfinder on {target_domain}")
-        run_command(["subfinder", "-d", target_domain, "--all", "--silent", "-config", f"{absolute_path}/subfinder-config.yaml", "-o", f"{absolute_path}/subs/subfinder.txt"])
+        # Running subfinder on the target domain
+        print(f'Running passive subdomains using subfinder for {target_domain}')
+        subfinder_output = run_command(["subfinder", "-d", target_domain, "--all", "--silent", "-config", f"{absolute_path}/subfinder-config.yaml"])
+        if subfinder_output:
+            subfinder_file = f"{subs_directory}/subfinder.txt"
+            write_subdomains_to_file(subfinder_output.split('\n'), subfinder_file)
 
-        # Active Subdomain Enumeration
-        print("[+] Active subdomain enumeration")
-        print("[+] DNS Brute forcing using puredns")
+        # Actie Subdomain Enumeration using DNS brute forcing with puredns
+        print("Actie Subdomain Enumeration using DNS brute forcing with puredns")
         try:
-            run_command(["puredns", "bruteforce", f"{absolute_path}/Wordlists/dns/dns_2m.txt", target_domain, "-r", f"{absolute_path}/Wordlists/dns/valid_resolvers.txt", "-w", f"{absolute_path}/subs/dns_bf.txt", "--skip-wildcard-filter", "--skip-validation"])
+            run_command(["puredns", "bruteforce", f"{absolute_path}/Wordlists/dns/dns_2m.txt", target_domain, "-r", f"{absolute_path}/Wordlists/dns/valid_resolvers.txt", "-w", f"{subs_directory}/dns_bf.txt", "--skip-wildcard-filter", "--skip-validation"])
         except Exception as e:
-            print(f"Error while running puredns. Details: {e}")
-        return None
+            print(f"Error while running puredns for DNS brute forcing: {e}")
 
-        print("[+] tls proping")
-        try:
-            cero_cmd = ["cero", target_domain]
-            cero_output = run_command(cero_cmd)
-            sed_cmd = ["sed", 's/^*.//']
-            sed_output = run_command(sed_cmd, input_data=cero_output.stdout)
-            grep_cmd = ["grep", "\\."]
-            grep_output = run_command(grep_cmd, input_data=sed_output.stdout)
-            sort_cmd = ["sort", "-u"]
-            sort_output = run_command(sort_cmd, input_data=grep_output.stdout)
-            grep_domain_cmd = ["grep", f".{target_domain}$"]
-            grep_domain_output = run_command(grep_domain_cmd, input_data=sort_output.stdout)
+        # TLS Probing
+        print("[+] tls probing")
+        cero_output = run_command(["cero", target_domain])
+        if cero_output:
+            sed_output = run_command(["sed", 's/^*.//'], input_data=cero_output)
+            grep_output = run_command(["grep", "\\."], input_data=sed_output)
+            sort_output = run_command(["sort", "-u"], input_data=grep_output)
+            grep_domain_output = run_command(["grep", f".{target_domain}$"], input_data=sort_output)
 
-            # Redirect output to a file
-            with open(f"{absolute_path}/subs/tls_probing.txt", "w") as tls_probing_file:
-                tls_probing_file.write(grep_domain_output.stdout)
-        except subprocess.CalledProcessError as e:
-            print(f"Error while performing tls proping . Output: {e.output}")
-        return None
+            if not grep_domain_output:
+                print("[!] Warning: No results from TLS probing. Subdomain enumeration may not have provided any domains.")
+            else:
+                with open(f"{subs_directory}/tls_probing.txt", "w") as tls_probing_file:
+                    tls_probing_file.write(grep_domain_output)
+    finally:
+        os.unlink(temp_file.name)
 
-        # Filtering out the results
-        print("[+] Filtering out the results")   
-        subs_files = glob.glob(f"{absolute_path}/subs/*")
-        cat_command = ["cat"] + subs_files
-        sort_command = ["sort", "-u"]
-        output_file = f"{absolute_path}/subs/all_subs_filtered.txt"
+def filter_and_resolve_subdomains():
+    print("[+] Filtering out the results")
+    subs_files = glob.glob(f"{absolute_path}/subs/*")
 
-        cat_process = subprocess.run(cat_command, stdout=subprocess.PIPE, text=True, check=True)
-        sort_process = subprocess.run(sort_command, input=cat_process.stdout, stdout=subprocess.PIPE, text=True, check=True)
+    # Read all content from subdomain files
+    all_subs_content = ""
+    for file_path in subs_files:
+        with open(file_path, 'r') as file:
+            all_subs_content += file.read()
 
-        with open(output_file, "w") as file:
-            file.write(sort_process.stdout)
-        
-        print("[+] Running puredns for resolving the subs and output in all_subs_resolved.txt ")
-        
-        try:
-            run_command(["puredns", "resolve", f"{absolute_path}/subs/all_subs_filtered.txt", "-r", f"{absolute_path}/Wordlists/dns/valid_resolvers.txt", "-w", f"{absolute_path}/subs/all_subs_resolved.txt", "--skip-wildcard-filter", "--skip-validation"])
-        except Exception as e:
-            print(f"Error while running puredns. Details: {e}")
-        return None
+    # Use Python's sort for sorting
+    sorted_subs_content = "\n".join(sorted(set(all_subs_content.split('\n'))))
 
-        print("[+] Running httpx for filtering the subs and output in filtered_hosts.txt ")
-        run_command(["httpx", "-l", f"{absolute_path}/subs/all_subs_filtered.txt", "-random-agent", "-retries", "2", "-o", f"{absolute_path}/subs/filtered_hosts.txt"])
-        
-        if webhook:
-            print("[+] Sending the output file all_subs_filtered.txt to Discord")
-            with open(f"{absolute_path}/subs/all_subs_filtered.txt", "rb") as file:
-                post(webhook, files={'file': file})
+    output_file = f"{absolute_path}/subs/all_subs_filtered.txt"
     
-    elif subs_file:
-        # Use the provided subdomains file for other operations
-        print(f"[+] Using provided subdomains file: {subs_file}")
-        run_command(["rm", "-r", f"{absolute_path}/subs/"])
-        run_command(["mkdir", f"{absolute_path}/subs/"])
-        cat_command = ["cat", subs_file]
-        sort_command = ["sort", "-u"]
-        output_file = f"{absolute_path}/subs/all_subs_filtered.txt"
+    with open(output_file, "w") as file:
+        file.write(sorted_subs_content)
 
-        cat_process = subprocess.run(cat_command, stdout=subprocess.PIPE, text=True, check=True)
-        sort_process = subprocess.run(sort_command, input=cat_process.stdout, stdout=subprocess.PIPE, text=True, check=True)
+    print("[+] Running puredns for resolving the subs and output in all_subs_resolved.txt")
 
-        with open(output_file, "w") as file:
-            file.write(sort_process.stdout)
+    try:
+        run_command(["puredns", "resolve", output_file, "-r", f"{absolute_path}/Wordlists/dns/valid_resolvers.txt", "-w", f"{absolute_path}/subs/all_subs_resolved.txt", "--skip-wildcard-filter", "--skip-validation"])
+    except Exception as e:
+        print(f"Error while running puredns for resolving subdomains: {e}")
 
-        print("[+] Running httpx for filtering the subs and output in filtered_hosts.txt ")
-        run_command(["httpx", "-l", f"{absolute_path}/subs/all_subs_filtered.txt", "-random-agent", "-retries", "2", "-o", f"{absolute_path}/subs/filtered_hosts.txt"])
+    print("[+] Running httpx for filtering the subs and output in filtered_hosts.txt")
+    run_command(["httpx", "-l", output_file, "-random-agent", "-retries", "2", "-o", f"{absolute_path}/subs/filtered_hosts.txt"])
 
-    if perform_portscan:
-        print("[+] Performing port scanning")
-        naabu_command = run_command(["naabu", "-list", f"{absolute_path}/subs/all_subs_filtered.txt", "-top-ports", "1000"])
-        naabu_output = run_command(["notify", "-bulk"], input_data=naabu_command.stdout)
+def port_scanning():
+    print("[+] Performing port scanning")
+    naabu_command = run_command(["naabu", "-list", f"{absolute_path}/subs/all_subs_filtered.txt", "-top-ports", "1000"])
+    if naabu_command:
+        run_command(["notify", "-bulk"], input_data=naabu_command)
 
-    if perform_nuclei_new:
-        print("[+] Scan with newly added templates to the nuclei templates repo ")
-        ntscan = run_command(["nuclei", "-l",  f"{absolute_path}/subs/filtered_hosts.txt", "-t", f"{absolute_path}/nuclei-templates/", "-nt", "-es", "info"])
-        ntscan_output = run_command(["notify", "-bulk"], input_data=ntscan.stdout)
+def scan_with_new_nuclei_templates():
+    print("[+] Scan with newly added templates to the nuclei templates repo")
+    ntscan = run_command(["nuclei", "-l",  f"{absolute_path}/subs/filtered_hosts.txt", "-t", f"{absolute_path}/nuclei-templates/", "-nt", "-es", "info"])
+    if ntscan:
+        run_command(["notify", "-bulk"], input_data=ntscan)
 
-    if perform_nuclei_full:
-        print("[+] Scan with the full nuclei template")
-        pt_scan = run_command(["nuclei", "-l", f"{absolute_path}/subs/filtered_hosts.txt", "-t", f"{absolute_path}/nuclei_templates/Others", "-es", "info"])
-        pt_output = run_command(["notify", "-bulk"], input_data=pt_scan.stdout)
-        
-    if perform_js_exposure:
-        print("[+] Scanning js files")
-        resolved_domains_output = run_command(["cat", f"{absolute_path}/subs/all_subs_resolved.txt"])
-        all_urls = run_command(["gau"], input_data=resolved_domains_output.stdout)
-        js_files_filter = run_command(["grep", "\\.js$"], input_data=all_urls.stdout)
-        js_files_output = run_command(["sort", "-u"], input_data=js_files_filter.stdout)
-        js_scan = run_command(["nuclei", "-t", f"{absolute_path}/nuclei_templates/js/information-disclosure-in-js-files.yaml"], input_data=js_files_output.stdout)
-        js_scan_output = run_command(["notify", "-bulk"], input_data=js_scan.stdout)
+def full_nuclei_scan():
+    print("[+] Scan with the full nuclei template")
+    pt_scan = run_command(["nuclei", "-l", f"{absolute_path}/subs/filtered_hosts.txt", "-t", f"{absolute_path}/nuclei_templates/Others", "-es", "info"])
+    if pt_scan:
+        run_command(["notify", "-bulk"], input_data=pt_scan)
 
-    if perform_exposed_panels:
-        print("[+] Scanning for exposed panels")
-        panels = run_command(["nuclei", "-l", f"{absolute_path}/subs/filtered_hosts.txt", "-t", f"{absolute_path}/nuclei_templates/Panels"])
-        panels_output = run_command(["notify", "-bulk"], input_data=panels.stdout)
+def js_exposure_scan():
+    print("[+] Scanning js files")
+    resolved_domains_output = run_command(["cat", f"{absolute_path}/subs/all_subs_resolved.txt"])
+    if resolved_domains_output:
+        all_urls = run_command(["gau"], input_data=resolved_domains_output)
+        js_files_filter = run_command(["grep", "\\.js$"], input_data=all_urls)
+        js_files_output = run_command(["sort", "-u"], input_data=js_files_filter)
+        js_scan = run_command(["nuclei", "-t", f"{absolute_path}/nuclei_templates/js/information-disclosure-in-js-files.yaml"], input_data=js_files_output)
+        if js_scan:
+            run_command(["notify", "-bulk"], input_data=js_scan)
 
-    if perform_xss_scan:
-        print("[+] Scanning for xss")
-        xss_scan(target_domain)
+def exposed_panels_scan():
+    print("[+] Scanning for exposed panels")
+    panels = run_command(["nuclei", "-l", f"{absolute_path}/subs/filtered_hosts.txt", "-t", f"{absolute_path}/nuclei_templates/Panels"])
+    if panels:
+        run_command(["notify", "-bulk"], input_data=panels)
 
+def recon(target_domain, perform_subenum=False, perform_portscan=False, perform_nuclei_new=False, perform_nuclei_full=False, perform_exposed_panels=False, perform_js_exposure=False, subs_file=None, perform_xss_scan=False, webhook=None):
+    try:
+        if perform_subenum:
+            subdomain_enumeration(target_domain)
+            filter_and_resolve_subdomains()
+
+        if subs_file:
+            # Use the provided subdomains file for other operations
+            print(f"[+] Using provided subdomains file: {subs_file}")
+            subs_directory = f"{absolute_path}/subs/"
+            run_command(["rm", "-r", subs_directory])
+            run_command(["mkdir", subs_directory])
+            cat_command = ["cat", subs_file]
+            sort_command = ["sort", "-u"]
+            output_file = f"{subs_directory}/all_subs_filtered.txt"
+
+            cat_process = run_command(cat_command, capture_output=False)
+            sort_process = run_command(sort_command, input_data=cat_process, capture_output=False)
+
+            with open(output_file, "w") as file:
+                file.write(sort_process)
+
+            print("[+] Running httpx for filtering the subs and output in filtered_hosts.txt ")
+            run_command(["httpx", "-l", f"{subs_directory}/all_subs_filtered.txt", "-random-agent", "-retries", "2", "-o", f"{subs_directory}/filtered_hosts.txt"])
+
+        if perform_portscan:
+            port_scanning()
+
+        if perform_nuclei_new:
+            scan_with_new_nuclei_templates()
+
+        if perform_nuclei_full:
+            full_nuclei_scan()
+
+        if perform_js_exposure:
+            js_exposure_scan()
+
+        if perform_exposed_panels:
+            exposed_panels_scan()
+
+        if perform_xss_scan:
+            print("[+] Scanning for XSS")
+            xss_scan(target_domain)
+
+    except Exception as e:
+        print(f"An error occurred during reconnaissance: {e}")
 
 if __name__ == "__main__":
     args = parse_args()
