@@ -44,7 +44,11 @@ Before using the script, ensure you have the following tools and dependencies in
    ```bash
    bash install.sh
    ```
-   
+5. Configure Discord Webhook URL in the Notify tool configuration file:
+
+   ```bash
+   nano $HOME/.config/notify/provider-config.yaml
+   ```
 ## Usage
 
 Run the script with the desired options to perform reconnaissance tasks. Below are some examples:
