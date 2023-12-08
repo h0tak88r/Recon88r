@@ -8,6 +8,7 @@ go install github.com/Emoe/kxss@latest
 go install github.com/lc/gau/v2/cmd/gau@latest
 go install -v github.com/projectdiscovery/naabu/v2/cmd/naabu@latest
 git clone https://github.com/h0tak88r/nuclei_templates.git
+git clone https://github.com/projectdiscovery/nuclei-templates.git
 git clone https://github.com/blechschmidt/massdns.git
 cd massdns
 make
