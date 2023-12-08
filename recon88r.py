@@ -7,8 +7,8 @@ import argparse
 import tempfile
 import concurrent.futures
 
-# The working directory, edit the below line for yours
-absolute_path = os.path.abspath(os.path.expanduser("/workspaces/recon_vps"))
+# Get the directory of the currently running script
+absolute_path = os.path.dirname(os.path.abspath(__file__))
 
 # Arguments Functions --------------------------------
 def parse_args():
@@ -16,7 +16,8 @@ def parse_args():
 
     # Specify the available command-line options
     parser.add_argument('-d', '--domain', type=validate_domain, required=True, help='Target domain for reconnaissance')
-    parser.add_argument('-se', '--subenum', action='store_true', help='Perform subdomain enumeration')
+    parser.add_argument('-ps', '--passive', action='store_true', help='Perform passive subdomain enumeration')
+    parser.add_argument('--ac', '--active', action='store_true', help='Perform active scan phase')
     parser.add_argument('-p', '--portscan', action='store_true', help='Perform port scanning')
     parser.add_argument('-nt', '--new-templates', action='store_true', help='Scan with newly added templates to the nuclei templates repo')
     parser.add_argument('-nf', '--nuclei-full', action='store_true', help='Perform a full nuclei scan')
@@ -33,20 +34,33 @@ def parse_args():
         parser.print_help()
         exit(1)
 
-def run_command(command, input_data=None, timeout=300, capture_output=True):
+def send_file_to_discord(webhook_url, file_path):
+    """
+    Send a file to Discord via webhook.
+    """
     try:
-        result = subprocess.run(command, input=input_data, capture_output=capture_output, text=True, check=True, timeout=timeout)
+        with open(file_path, 'rb') as file:
+            files = {'file': file}
+            response = requests.post(webhook_url, files=files)
+
+            if response.status_code == 200:
+                print(f"File '{file_path}' successfully sent to Discord.")
+            else:
+                print(f"Failed to send file to Discord. Status code: {response.status_code}")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+
+def run_command(command, input_data=None, capture_output=True):
+    try:
+        result = subprocess.run(command, input=input_data, capture_output=capture_output, text=True, check=True)
         return result.stdout.strip() if capture_output else None
     except subprocess.CalledProcessError as e:
         print(f"Error while running command {command}: {e}")
         return None
-    except subprocess.TimeoutExpired:
-        print(f"Command {command} timed out after {timeout} seconds.")
-        return None
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
         return None
-
 
 def validate_domain(domain):
     """
@@ -112,32 +126,36 @@ def write_subdomains_to_file(subdomains, output_file):
         for subdomain in sorted(subdomains):
             file.write(f'{subdomain}\n')
 
-def subdomain_enumeration(target_domain):
+def subdomain_enumeration(target_domain, perform_passive, perform_active):
     print("[+] Performing subdomain enumeration")
-    print("[+] Passive Subdomain Enumeration ....")
-    
-    subs_directory = f"{absolute_path}/subs/"
-    run_command(["rm", "-r", subs_directory])
-    run_command(["mkdir", subs_directory])
 
-    # Fetch subdomains from all sources
-    subdomains = fetch_all_subdomains(target_domain)
-    
-    # Write subdomains to a file
-    temp_file = tempfile.NamedTemporaryFile(mode='w+', delete=False)
-    try:
-        write_subdomains_to_file(subdomains, temp_file.name)
-        output_file = f'{subs_directory}/{target_domain}.txt'
-        write_subdomains_to_file(subdomains, output_file)
-        print(f'Passive Subdomains saved to {output_file}')
+    if perform_passive:
+        print("[+] Passive Subdomain Enumeration ....")
+        subs_directory = f"{absolute_path}/subs/"
+        run_command(["rm", "-r", subs_directory])
+        run_command(["mkdir", subs_directory])
+
+        # Fetch subdomains from all sources
+        subdomains = fetch_all_subdomains(target_domain)
+
+        # Write subdomains to a file
+        temp_file = tempfile.NamedTemporaryFile(mode='w+', delete=False)
+        try:
+            write_subdomains_to_file(subdomains, temp_file.name)
+            output_file = f'{subs_directory}/{target_domain}.txt'
+            write_subdomains_to_file(subdomains, output_file)
+            print(f'Passive Subdomains saved to {output_file}')
+        finally:
+            os.unlink(temp_file.name)
 
         # Running subfinder on the target domain
         print(f'Running passive subdomains using subfinder for {target_domain}')
-        subfinder_output = run_command(["subfinder", "-d", target_domain, "--all", "--silent", "-config", f"{absolute_path}/subfinder-config.yaml"])
+        subfinder_output = run_command(["subfinder", "-d", target_domain, "--all", "--silent"])
         if subfinder_output:
             subfinder_file = f"{subs_directory}/subfinder.txt"
             write_subdomains_to_file(subfinder_output.split('\n'), subfinder_file)
 
+    if perform_active:
         # Actie Subdomain Enumeration using DNS brute forcing with puredns
         print("Actie Subdomain Enumeration using DNS brute forcing with puredns")
         try:
@@ -159,8 +177,6 @@ def subdomain_enumeration(target_domain):
             else:
                 with open(f"{subs_directory}/tls_probing.txt", "w") as tls_probing_file:
                     tls_probing_file.write(grep_domain_output)
-    finally:
-        os.unlink(temp_file.name)
 
 def filter_and_resolve_subdomains():
     print("[+] Filtering out the results")
@@ -225,12 +241,10 @@ def exposed_panels_scan():
     if panels:
         run_command(["notify", "-bulk"], input_data=panels)
 
-def recon(target_domain, perform_subenum=False, perform_portscan=False, perform_nuclei_new=False, perform_nuclei_full=False, perform_exposed_panels=False, perform_js_exposure=False, subs_file=None, perform_xss_scan=False, webhook=None):
+def recon(target_domain, perform_passive=False, perform_active=False, perform_portscan=False, perform_nuclei_new=False, perform_nuclei_full=False, perform_exposed_panels=False, perform_js_exposure=False, subs_file=None, perform_xss_scan=False, webhook=None):
     try:
-        if perform_subenum:
-            subdomain_enumeration(target_domain)
-            filter_and_resolve_subdomains()
-
+        subdomain_enumeration(target_domain, perform_passive, perform_active)
+        filter_and_resolve_subdomains()
         if subs_file:
             # Use the provided subdomains file for other operations
             print(f"[+] Using provided subdomains file: {subs_file}")
@@ -250,6 +264,9 @@ def recon(target_domain, perform_subenum=False, perform_portscan=False, perform_
             print("[+] Running httpx for filtering the subs and output in filtered_hosts.txt ")
             run_command(["httpx", "-l", f"{subs_directory}/all_subs_filtered.txt", "-random-agent", "-retries", "2", "-o", f"{subs_directory}/filtered_hosts.txt"])
 
+        if webhook:
+            send_file_to_discord(webhook, f"{absolute_path}/subs/all_subs_filtered.txt" )
+        
         if perform_portscan:
             port_scanning()
 
@@ -274,6 +291,4 @@ def recon(target_domain, perform_subenum=False, perform_portscan=False, perform_
 
 if __name__ == "__main__":
     args = parse_args()
-
-    # Call the recon function with the provided arguments
-    recon(args.domain, args.subenum, args.portscan, args.new_templates, args.nuclei_full, args.exposed_panels, args.js_exposures, args.subs_file, args.xss_scan, args.webhook)
+    recon(args.domain, args.passive, args.ac, args.portscan, args.new_templates, args.nuclei_full, args.exposed_panels, args.js_exposures, args.subs_file, args.xss_scan, args.webhook)
