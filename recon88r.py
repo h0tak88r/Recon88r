@@ -21,8 +21,6 @@ banner ="""
 """
 print(banner)
 
-
-
 # Get the directory of the currently running script
 absolute_path = os.path.dirname(os.path.abspath(__file__))
 
