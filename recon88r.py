@@ -82,7 +82,7 @@ def validate_domain(domain):
     """
     Validates the domain name using a regular expression.
     """
-    pattern = re.compile(r'^([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9])\.([a-zA-Z]{2,})$')
+    pattern = re.compile(r'^([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9])\.([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]\.)?([a-zA-Z]{2,})$')
     if not pattern.match(domain):
         raise ValueError('Invalid domain name')
     return domain
