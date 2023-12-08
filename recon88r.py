@@ -7,6 +7,22 @@ import argparse
 import tempfile
 import concurrent.futures
 
+banner ="""
+
+  _____                       ___   ___       
+ |  __ \                     / _ \ / _ \      
+ | |__) |___  ___ ___  _ __ | (_) | (_) |_ __ 
+ |  _  // _ \/ __/ _ \| '_ \ > _ < > _ <| '__|
+ | | \ \  __/ (_| (_) | | | | (_) | (_) | |   
+ |_|  \_\___|\___\___/|_| |_|\___/ \___/|_|   
+                                              
+                                              
+
+"""
+print(banner)
+
+
+
 # Get the directory of the currently running script
 absolute_path = os.path.dirname(os.path.abspath(__file__))
 
