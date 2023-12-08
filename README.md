@@ -1,10 +1,10 @@
 # Recon88r Script
 
-This script is designed for performing reconnaissance tasks on a target domain. It includes various modules for subdomain enumeration, port scanning, template-based scanning, XSS, JS Files Analysis, Seaching for exposed panels.
+This Python script automates the reconnaissance process for penetration testers and bug hunters. It is designed to streamline subdomain enumeration, port scanning, template-based scanning, XSS, JS file analysis, and searching for exposed panels. The script sends live results via Discord, eliminating the need to manually check logs. It can be run as a cron job or within a tmux session, allowing users to efficiently await results.
 
 ## Prerequisites
 
-Before using the script, make sure you have the following tools and dependencies installed:
+Before using the script, ensure you have the following tools and dependencies installed:
 
 - Python 3.x
 - [Subfinder](https://github.com/projectdiscovery/subfinder)
@@ -39,18 +39,12 @@ Before using the script, make sure you have the following tools and dependencies
    source venv/bin/activate  # On Windows, use 'venv\Scripts\activate'
    ```
 
-4. Install the required Prerequisites :
+4. Install the required prerequisites:
 
    ```bash
    bash install.sh
    ```
-
-5. Modify the `absolute_path` variable in the script to point to your desired working directory:
-
-   ```python
-   absolute_path = os.path.abspath(os.path.expanduser("/path/to/your/working/directory"))
-   ```
-
+   
 ## Usage
 
 Run the script with the desired options to perform reconnaissance tasks. Below are some examples:
@@ -74,4 +68,4 @@ python recon88r.py -d example.com -se -p -nt -nf -ep -js -xss -wh your_discord_w
 
 ## Contributing
 
-If you encounter any issues or have suggestions for improvements, feel free to open an issue or submit a pull request.
+If you encounter any issues or have suggestions for improvements, feel free to open an issue or submit a pull request. Collaboration is welcome, and don't hesitate to reach out for assistance.
