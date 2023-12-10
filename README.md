@@ -54,13 +54,14 @@ Before using the script, ensure you have the following tools and dependencies in
 Run the script with the desired options to perform reconnaissance tasks. Below are some examples:
 
 ```bash
-python recon88r.py -d example.com -se -p -nt -nf -ep -js -xss -wh your_discord_webhook_url
+python3 recon88r.py -d minitorn.tlu.ee -ps -ac -p -nt -nf -ep -js -xss -wh your_discord_webhook_url
 ```
 
 ### Available Options:
 
 - `-d, --domain`: Target domain for reconnaissance (required).
-- `-se, --subenum`: Perform subdomain enumeration.
+- `-ps, --passive`: Perform passive subdomain enumeration.
+- `-ac  --active` : Active subdoamins enumeration
 - `-p, --portscan`: Perform port scanning.
 - `-nt, --new-templates`: Scan with newly added templates to the nuclei templates repo.
 - `-nf, --nuclei-full`: Perform a full nuclei scan.
