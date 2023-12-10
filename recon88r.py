@@ -253,7 +253,7 @@ def js_exposure_scan():
 
 def exposed_panels_scan():
     print("[+] Scanning for exposed panels")
-    panels = run_command(["nuclei", "-l", f"{absolute_path}/subs/filtered_hosts.txt", "-t", f"{absolute_path}/nuclei_templates/Panels"])
+    panels = run_command(["nuclei", "-l", f"{absolute_path}/subs/filtered_hosts.txt", "-t", f"{absolute_path}/nuclei_templates/panels"])
     if panels:
         run_command(["notify", "-bulk"], input_data=panels)
 
