@@ -33,7 +33,8 @@ install_go_tools
 install_massdns
 
 # Clone Wordlists repository
-git clone https://github.com/h0tak88r/Wordlists.git
+git clone --depth 1 https://github.com/h0tak88r/Wordlists.git &
+wait
 
 # Copy .gau.toml to user's home directory
 cp .gau.toml $HOME/.gau.toml
