@@ -310,6 +310,8 @@ def recon(target_domain, perform_passive=False, perform_active=False, perform_po
         if perform_xss_scan:
             print("[+] Scanning for XSS")
             xss_scan(target_domain)
+        if perform_fuzzing:
+			fuzzing()
 
     except Exception as e:
         print(f"An error occurred during reconnaissance: {e}")
