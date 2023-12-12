@@ -33,7 +33,7 @@ def parse_args():
     # Specify the available command-line options
     parser.add_argument('-d', '--domain', type=validate_domain, required=True, help='Target domain for reconnaissance')
     parser.add_argument('-ps', '--passive', action='store_true', help='Perform passive subdomain enumeration')
-    parser.add_argument('--ac', '--active', action='store_true', help='Perform active scan phase')
+    parser.add_argument('-ac', '--active', action='store_true', help='Perform active scan phase')
     parser.add_argument('-p', '--portscan', action='store_true', help='Perform port scanning')
     parser.add_argument('-nt', '--new-templates', action='store_true', help='Scan with newly added templates to the nuclei templates repo')
     parser.add_argument('-nf', '--nuclei-full', action='store_true', help='Perform a full nuclei scan')
@@ -42,6 +42,7 @@ def parse_args():
     parser.add_argument('-sl', '--subs-file', help='Path to the subdomains file')
     parser.add_argument('-xss', '--xss-scan', action='store_true', help='Perform xss scans')
     parser.add_argument('-wh', '--webhook', help='Webhook URL for Discord')
+    parser.add_argument('-f', '--fuzzing', action='store_true' , help='fuzzing with h0tak88r.txt wordlist')
 
     try:
         return parser.parse_args()
@@ -253,11 +254,19 @@ def js_exposure_scan():
 
 def exposed_panels_scan():
     print("[+] Scanning for exposed panels")
-    panels = run_command(["nuclei", "-l", f"{absolute_path}/subs/filtered_hosts.txt", "-t", f"{absolute_path}/nuclei_templates/panels"])
+    panels = run_command(["nuclei", "-l", f"{absolute_path}/subs/filtered_hosts.txt", "-t", f"{absolute_path}/nuclei_templates/Panels"])
     if panels:
         run_command(["notify", "-bulk"], input_data=panels)
 
-def recon(target_domain, perform_passive=False, perform_active=False, perform_portscan=False, perform_nuclei_new=False, perform_nuclei_full=False, perform_exposed_panels=False, perform_js_exposure=False, subs_file=None, perform_xss_scan=False, webhook=None):
+
+def fuzzing():
+	print("[+] Fuzzing with h0tak88r.txt Wordlist:")
+	h0tak88r_fuzzing = h0tak88r_fuzzing = run_command(["nuclei", "l", f"{absolute_path}/subs/filtered_hosts.txt", "-t", f"{absolute_path}/nuclei_templates/fuzzing/h0tak88r/"])
+	if basic_fuzzing:
+		run_command(["notify", "-bulk"], input_data=h0tak88r_fuzzing)
+
+
+def recon(target_domain, perform_passive=False, perform_active=False, perform_portscan=False, perform_nuclei_new=False, perform_nuclei_full=False, perform_exposed_panels=False, perform_js_exposure=False, subs_file=None, perform_xss_scan=False, webhook=None, perform_fuzzing=False):
     try:
         subdomain_enumeration(target_domain, perform_passive, perform_active)
         filter_and_resolve_subdomains()
@@ -307,4 +316,10 @@ def recon(target_domain, perform_passive=False, perform_active=False, perform_po
 
 if __name__ == "__main__":
     args = parse_args()
-    recon(args.domain, args.passive, args.ac, args.portscan, args.new_templates, args.nuclei_full, args.exposed_panels, args.js_exposures, args.subs_file, args.xss_scan, args.webhook)
+    if not args.subs_file:
+        # If no subs file is provided, the domain is required
+        if not args.domain:
+            print("Error: Target domain is required.")
+            exit(1)
+    
+    recon(args.domain, args.passive, args.active, args.portscan, args.new_templates, args.nuclei_full, args.exposed_panels, args.js_exposures, args.subs_file, args.xss_scan, args.webhook, args.fuzzing)
