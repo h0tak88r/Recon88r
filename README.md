@@ -1,4 +1,4 @@
-![image](https://github.com/h0tak88r/Recon88r/assets/108616378/59fc5ee8-0263-4825-a135-886244181710)# Recon88r Script
+# Recon88r Script
 
 This Python script automates the reconnaissance process for penetration testers and bug hunters. It is designed to streamline subdomain enumeration, port scanning, template-based scanning, XSS, JS file analysis, and searching for exposed panels. The script sends live results via Discord, eliminating the need to manually check logs. It can be run as a cron job or within a tmux session, allowing users to efficiently await results.
 
