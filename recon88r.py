@@ -195,7 +195,7 @@ def subdomain_enumeration(target_domain, perform_passive, perform_active):
                 with open(f"{subs_directory}/tls_probing.txt", "w") as tls_probing_file:
                     tls_probing_file.write(grep_domain_output)
 
-def filter_and_resolve_subdomains():
+def filter_and_resolve_subdomains_dns():
     print("[+] Filtering out the results")
     subs_files = glob.glob(f"{absolute_path}/subs/*")
 
@@ -222,6 +222,7 @@ def filter_and_resolve_subdomains():
 
     print("[+] Running httpx for filtering the subs and output in filtered_hosts.txt")
     run_command(["httpx", "-l", output_file, "-random-agent", "-retries", "2", "-o", f"{absolute_path}/subs/filtered_hosts.txt"])
+
 
 def port_scanning():
     print("[+] Performing port scanning")
@@ -260,11 +261,10 @@ def exposed_panels_scan():
 
 
 def fuzzing():
-	print("[+] Fuzzing with h0tak88r.txt Wordlist:")
-	h0tak88r_fuzzing = h0tak88r_fuzzing = run_command(["nuclei", "l", f"{absolute_path}/subs/filtered_hosts.txt", "-t", f"{absolute_path}/nuclei_templates/fuzzing/h0tak88r/"])
-	if basic_fuzzing:
-		run_command(["notify", "-bulk"], input_data=h0tak88r_fuzzing)
-
+    print("[+] Fuzzing with h0tak88r.txt Wordlist:")
+    h0tak88r_fuzzing = run_command(["nuclei", "l", f"{absolute_path}/subs/filtered_hosts.txt", "-t", f"{absolute_path}/nuclei_templates/fuzzing/h0tak88r/"])
+    if h0tak88r_fuzzing:
+        run_command(["notify", "-bulk"], input_data=h0tak88r_fuzzing)
 
 def recon(target_domain, perform_passive=False, perform_active=False, perform_portscan=False, perform_nuclei_new=False, perform_nuclei_full=False, perform_exposed_panels=False, perform_js_exposure=False, subs_file=None, perform_xss_scan=False, webhook=None, perform_fuzzing=False):
     try:
