@@ -54,7 +54,7 @@ Before using the script, ensure you have the following tools and dependencies in
 Run the script with the desired options to perform reconnaissance tasks. Below are some examples:
 
 ```bash
-python3 recon88r.py -d minitorn.tlu.ee -ps -ac -p -nt -nf -ep -js -xss -wh your_discord_webhook_url
+python3 recon88r.py -d minitorn.tlu.ee -ps -ac -p -nt -nf -ep -js -xss -f -wh your_discord_webhook_url
 ```
 
 ### Available Options:
@@ -70,6 +70,7 @@ python3 recon88r.py -d minitorn.tlu.ee -ps -ac -p -nt -nf -ep -js -xss -wh your_
 - `-sl, --subs-file`: Path to the subdomains file.
 - `-xss, --xss-scan`: Perform XSS scans.
 - `-wh, --webhook`: Webhook URL for Discord.
+- '-f, --fuzzing': Fuzzing with GET/POST using various techniques.
 
 
 ## Workflow Mind-Map
