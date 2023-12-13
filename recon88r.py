@@ -264,7 +264,7 @@ def fuzzing():
     print("[+] Fuzzing with h0tak88r.txt Wordlist:")
     h0tak88r_fuzzing = run_command(["nuclei", "l", f"{absolute_path}/subs/filtered_hosts.txt", "-t", f"{absolute_path}/nuclei_templates/fuzzing/h0tak88r/"])
     if h0tak88r_fuzzing:
-	run_command(["notify", "-bulk"], input_data=h0tak88r_fuzzing)
+        run_command(["notify", "-bulk"], input_data=h0tak88r_fuzzing)
 
 
 def recon(target_domain, perform_passive=False, perform_active=False, perform_portscan=False, perform_nuclei_new=False, perform_nuclei_full=False, perform_exposed_panels=False, perform_js_exposure=False, subs_file=None, perform_xss_scan=False, webhook=None, perform_fuzzing=False):
@@ -312,7 +312,7 @@ def recon(target_domain, perform_passive=False, perform_active=False, perform_po
             print("[+] Scanning for XSS")
             xss_scan(target_domain)
         if perform_fuzzing:
-			fuzzing()
+	    fuzzing()
 
     except Exception as e:
         print(f"An error occurred during reconnaissance: {e}")
