@@ -195,7 +195,7 @@ def subdomain_enumeration(target_domain, perform_passive, perform_active):
                 with open(f"{subs_directory}/tls_probing.txt", "w") as tls_probing_file:
                     tls_probing_file.write(grep_domain_output)
 
-def filter_and_resolve_subdomains_dns():
+def filter_and_resolve_subdomains():
     print("[+] Filtering out the results")
     subs_files = glob.glob(f"{absolute_path}/subs/*")
 
