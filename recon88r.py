@@ -266,6 +266,7 @@ def fuzzing():
     if h0tak88r_fuzzing:
         run_command(["notify", "-bulk"], input_data=h0tak88r_fuzzing)
 
+
 def recon(target_domain, perform_passive=False, perform_active=False, perform_portscan=False, perform_nuclei_new=False, perform_nuclei_full=False, perform_exposed_panels=False, perform_js_exposure=False, subs_file=None, perform_xss_scan=False, webhook=None, perform_fuzzing=False):
     try:
         subdomain_enumeration(target_domain, perform_passive, perform_active)
