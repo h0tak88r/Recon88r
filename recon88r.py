@@ -6,7 +6,6 @@ import glob
 import argparse
 import tempfile
 import concurrent.futures
-import shlex
 
 banner ="""
 
