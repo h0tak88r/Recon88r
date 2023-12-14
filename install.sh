@@ -38,3 +38,6 @@ wait
 
 # Copy .gau.toml to user's home directory
 cp .gau.toml $HOME/.gau.toml
+
+# Add the line for local file access to Nuclei configuration
+echo "allow-local-file-access: true" >> ~/.config/nuclei/config.yaml
