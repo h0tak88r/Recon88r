@@ -31,7 +31,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Reconnaissance script with various modules.')
 
     # Specify the available command-line options
-    parser.add_argument('-d', '--domain', type=validate_domain, required=True, help='Target domain for reconnaissance')
+    parser.add_argument('-d', '--domain', type=validate_domain, help='Target domain for reconnaissance')
     parser.add_argument('-ps', '--passive', action='store_true', help='Perform passive subdomain enumeration')
     parser.add_argument('-ac', '--active', action='store_true', help='Perform active scan phase')
     parser.add_argument('-p', '--portscan', action='store_true', help='Perform port scanning')
@@ -263,30 +263,34 @@ def exposed_panels_scan():
 def fuzzing():
     print("[+] Fuzzing with h0tak88r.txt Wordlist:")
     print("[+] Please mak sure thatthe config file for nuclei has allow-local-file-access: true")
-    h0tak88r_fuzzing = run_command(["nuclei", "l", f"{absolute_path}/subs/filtered_hosts.txt", "-t", f"{absolute_path}/nuclei_templates/fuzzing/h0tak88r/"])
-    if h0tak88r_fuzzing:
-        run_command(["notify", "-bulk"], input_data=h0tak88r_fuzzing)
-
+    try:
+        h0tak88r_fuzzing = run_command(["nuclei", "l", f"{absolute_path}/subs/filtered_hosts.txt", "-t", f"{absolute_path}/nuclei_templates/fuzzing/h0tak88r/"])
+        if h0tak88r_fuzzing:
+            run_command(["notify", "-bulk"], input_data=h0tak88r_fuzzing)
+    except Exception as e:
+        print(f"An error occurred during fuzzing: {e}")
 
 def recon(target_domain, perform_passive=False, perform_active=False, perform_portscan=False, perform_nuclei_new=False, perform_nuclei_full=False, perform_exposed_panels=False, perform_js_exposure=False, subs_file=None, perform_xss_scan=False, webhook=None, perform_fuzzing=False):
     try:
-        subdomain_enumeration(target_domain, perform_passive, perform_active)
-        filter_and_resolve_subdomains()
+        if target_domain:
+            subdomain_enumeration(target_domain, perform_passive, perform_active)
+            filter_and_resolve_subdomains()
         if subs_file:
             # Use the provided subdomains file for other operations
             print(f"[+] Using provided subdomains file: {subs_file}")
+            print("[+] Filtering dupliacates...")
             subs_directory = f"{absolute_path}/subs/"
             run_command(["rm", "-r", subs_directory])
             run_command(["mkdir", subs_directory])
-            cat_command = ["cat", subs_file]
-            sort_command = ["sort", "-u"]
-            output_file = f"{subs_directory}/all_subs_filtered.txt"
 
-            cat_process = run_command(cat_command, capture_output=False)
-            sort_process = run_command(sort_command, input_data=cat_process, capture_output=False)
+            with open(subs_file, 'r') as file:
+                subdomains = set(file.read().splitlines())
 
-            with open(output_file, "w") as file:
-                file.write(sort_process)
+            sorted_subdomains = sorted(subdomains)
+
+            with open(f"{subs_directory}/all_subs_filtered.txt", 'w') as output_file:
+                for subdomain in sorted_subdomains:
+                    output_file.write(f'{subdomain}\n')
 
             print("[+] Running httpx for filtering the subs and output in filtered_hosts.txt ")
             run_command(["httpx", "-l", f"{subs_directory}/all_subs_filtered.txt", "-random-agent", "-retries", "2", "-o", f"{subs_directory}/filtered_hosts.txt"])
