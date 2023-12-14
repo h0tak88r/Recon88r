@@ -267,7 +267,7 @@ def fuzzing():
     print("[+] Fuzzing with h0tak88r.txt Wordlist:")
     print("[+] Please make sure that the config file for nuclei has allow-local-file-access: true")
     try:
-        h0tak88r_fuzzing = run_command(["nuclei", "l", f"{absolute_path}/subs/filtered_hosts.txt", "-t", f"{absolute_path}/nuclei_templates/fuzzing/h0tak88r/"])
+        h0tak88r_fuzzing = run_command(["nuclei", "-l", f"{absolute_path}/subs/filtered_hosts.txt", "-t", f"{absolute_path}/nuclei_templates/fuzzing/h0tak88r/"])
         if h0tak88r_fuzzing:
             run_command(["notify", "-bulk"], input_data=h0tak88r_fuzzing)
     except Exception as e:
