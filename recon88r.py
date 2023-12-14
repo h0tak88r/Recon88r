@@ -6,6 +6,7 @@ import glob
 import argparse
 import tempfile
 import concurrent.futures
+import shlex
 
 banner ="""
 
@@ -74,6 +75,8 @@ def run_command(command, input_data=None, capture_output=True):
         return result.stdout.strip() if capture_output else None
     except subprocess.CalledProcessError as e:
         print(f"Error while running command {command}: {e}")
+        print("Command Output:")
+        print(e.output.decode())
         return None
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
@@ -262,7 +265,7 @@ def exposed_panels_scan():
 
 def fuzzing():
     print("[+] Fuzzing with h0tak88r.txt Wordlist:")
-    print("[+] Please mak sure thatthe config file for nuclei has allow-local-file-access: true")
+    print("[+] Please make sure that the config file for nuclei has allow-local-file-access: true")
     try:
         h0tak88r_fuzzing = run_command(["nuclei", "l", f"{absolute_path}/subs/filtered_hosts.txt", "-t", f"{absolute_path}/nuclei_templates/fuzzing/h0tak88r/"])
         if h0tak88r_fuzzing:
