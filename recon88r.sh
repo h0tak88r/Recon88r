@@ -87,7 +87,7 @@ perform_js_exposure_scan() {
 
 scan_with_new_nuclei_templates() {
     echo "[+] Scan with newly added templates to the nuclei templates repo"
-    cat subs/filtered_hosts.txt | nuclei -t nuclei-templates/ -nt -es info | notify -bulk -p discord -pc provider-config.yml
+    cat subs/filtered_hosts.txt | nuclei -t nuclei-templates/ -nt -es info | notify -bulk
 }
 
 perform_full_nuclei_scan() {
