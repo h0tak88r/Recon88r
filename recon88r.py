@@ -122,10 +122,7 @@ def fetch_all_subdomains(domain):
     urls = [
         f'https://rapiddns.io/subdomain/{domain}?full=1#result',
         f'http://web.archive.org/cdx/search/cdx?url=*.{domain}/*&output=text&fl=original&collapse=urlkey',
-        f'https://crt.sh/?q=%.{domain}',
-        f'https://crt.sh/?q=%.%.{domain}',
-        f'https://crt.sh/?q=%.%.%.{domain}',
-        f'https://crt.sh/?q=%.%.%.%.{domain}',
+        f'https://crt.sh/?q=%25.{domain}&output=json',
         f'https://otx.alienvault.com/api/v1/indicators/domain/{domain}/passive_dns',
         f'https://api.hackertarget.com/hostsearch/?q={domain}',
         f'https://urlscan.io/api/v1/search/?q={domain}',
