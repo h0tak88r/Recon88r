@@ -78,6 +78,9 @@ url -> https://xmind.works/share/jhW6EyeZ
 <img width="1127" alt="Recon88r py Workflow-Map 1" src="https://github.com/h0tak88r/Recon88r/assets/108616378/25208a1b-b459-4407-a90e-996d5e4e0828">
 
 
+# Bash Version
+- Simply run it using command `bash recon88r.sh`
+
 ## Contributing
 
 If you encounter any issues or have suggestions for improvements, feel free to open an issue or submit a pull request. Collaboration is welcome, and don't hesitate to reach out for assistance.
