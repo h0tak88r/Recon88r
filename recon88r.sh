@@ -1,5 +1,16 @@
 #!/bin/bash
 
+check_required_tools() {
+    local required_tools=("subfinder" "naabu" "httpx" "gau" "kxss" "nuclei")
+    
+    for tool in "${required_tools[@]}"; do
+        if ! command -v "$tool" &> /dev/null; then
+            echo "Error: $tool is not installed. Please install it before running the script."
+            exit 1
+        fi
+    done
+}
+
 banner() {
 cat << "EOF"
   _____                       ___   ___       
@@ -16,6 +27,16 @@ cleanup_subs_directory() {
     echo "[+] Cleaning up the subs directory"
     rm -rf subs/
     mkdir subs
+}
+
+get_target_domain() {
+    read -p "Enter the target domain: " target_domain
+    echo "$target_domain"
+}
+
+get_discord_webhooks() {
+    read -p "Enter the Discord webhook URL for passive scan: " DISCORD_WEBHOOK_PASSIVE
+    read -p "Enter the Discord webhook URL for active scan: " DISCORD_WEBHOOK_ACTIVE
 }
 
 passive_subdomain_enumeration() {
@@ -106,11 +127,20 @@ fuuzing() {
 }
 
 recon() {
-    target_domain=$1
-    passive_subdomain_enumeration "$target_domain"
-    active_subdomain_enumeration "$target_domain"
-    send_file_to_discord "https://discord.com/api/webhooks/1052205480681951252/_hAFDr4MN8Z1iPsusHi0vFEb9Q_DtLAF-mnUGKO7ZSemNHP9OxjcN0i30gSVKZjdNPmb" "subs/all_subs_filtered.txt"
-    send_file_to_discord "https://discord.com/api/webhooks/1052205480681951252/_hAFDr4MN8Z1iPsusHi0vFEb9Q_DtLAF-mnUGKO7ZSemNHP9OxjcN0i30gSVKZjdNPmb" "subs/filtered_hosts.txt"
+    check_required_tools
+
+    banner
+    cleanup_subs_directory
+
+    TARGET_DOMAIN=$(get_target_domain)
+    get_discord_webhooks
+
+    passive_subdomain_enumeration "$TARGET_DOMAIN"
+    active_subdomain_enumeration "$TARGET_DOMAIN"
+
+    send_file_to_discord "$DISCORD_WEBHOOK_PASSIVE" "subs/all_subs_filtered.txt"
+    send_file_to_discord "$DISCORD_WEBHOOK_ACTIVE" "subs/filtered_hosts.txt"
+
     xss_scan
     perform_port_scanning
     perform_exposed_panels_scan
@@ -120,7 +150,5 @@ recon() {
     fuuzing
 }
 
-TARGET_DOMAIN=$1
-banner
-cleanup_subs_directory
-recon "$TARGET_DOMAIN"
+# Main execution
+recon
