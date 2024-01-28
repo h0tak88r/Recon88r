@@ -148,7 +148,7 @@ def subdomain_enumeration(target_domain, perform_passive, perform_active):
     if perform_passive:
         print("[+] Passive Subdomain Enumeration ....")
         subs_directory = f"{absolute_path}/subs/"
-        run_command(["rm", "-r", subs_directory])
+        run_command(["rm", "-rf", subs_directory])
         run_command(["mkdir", subs_directory])
 
         # Fetch subdomains from all sources
