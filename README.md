@@ -67,7 +67,7 @@ python3 recon88r.py -d wurl.com -ps -ac -p -nt -nf -ep -js -xss -f -wh your_disc
 - `-nf, --nuclei-full`: Perform a full nuclei scan.
 - `-ep, --exposed-panels`: Perform Panels dorking with nuclei templates.
 - `-js, --js-exposures`: Perform JS Exposures.
-- `-sl, --subs-file`: Path to the subdomains file.
+- `-sl, --subs-file`: Path to the subdomains file(Sometimes you got the subdomains from other tools and wanna do just the other features only so pass the subs list and enjoy other features).
 - `-xss, --xss-scan`: Perform XSS scans.
 - `-wh, --webhook`: Webhook URL for Discord.
 - '-f, --fuzzing': Fuzzing with GET/POST using various techniques.
