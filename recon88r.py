@@ -279,7 +279,7 @@ def recon(target_domain, perform_passive=False, perform_active=False, perform_po
             print(f"[+] Using provided subdomains file: {subs_file}")
             print("[+] Filtering dupliacates...")
             subs_directory = f"{absolute_path}/subs/"
-            run_command(["rm", "-r", subs_directory])
+            run_command(["rm", "-rf", subs_directory])
             run_command(["mkdir", subs_directory])
 
             with open(subs_file, 'r') as file:
