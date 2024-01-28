@@ -179,20 +179,20 @@ def subdomain_enumeration(target_domain, perform_passive, perform_active):
         except Exception as e:
             print(f"Error while running puredns for DNS brute forcing: {e}")
 
-        # TLS Probing
-        print("[+] tls probing")
+        ## TLS Probing
+        print("[+] TLS probing")
         cero_output = run_command(["cero", target_domain])
         if cero_output:
             sed_output = run_command(["sed", 's/^*.//'], input_data=cero_output)
             grep_output = run_command(["grep", "\\."], input_data=sed_output)
-            sort_output = run_command(["sort", "-u"], input_data=grep_output)
-            grep_domain_output = run_command(["grep", f".{target_domain}$"], input_data=sort_output)
-
-            if not grep_domain_output:
-                print("[!] Warning: No results from TLS probing. Subdomain enumeration may not have provided any domains.")
-            else:
+            if grep_output is not None and len(grep_output) > 0:
+                sort_output = run_command(["sort", "-u"], input_data=grep_output)
                 with open(f"{subs_directory}/tls_probing.txt", "w") as tls_probing_file:
-                    tls_probing_file.write(grep_domain_output)
+                    tls_probing_file.write(sort_output)
+            else:
+                print("[!] Warning: No domains found in TLS probing results.")
+        else:
+            print("[!] Error during TLS probing. Subdomain enumeration may not have provided any domains.")
 
 def filter_and_resolve_subdomains():
     print("[+] Filtering out the results")
@@ -279,7 +279,7 @@ def recon(target_domain, perform_passive=False, perform_active=False, perform_po
             print(f"[+] Using provided subdomains file: {subs_file}")
             print("[+] Filtering dupliacates...")
             subs_directory = f"{absolute_path}/subs/"
-            run_command(["rm", "-rf", subs_directory])
+            run_command(["rm", "-r", subs_directory])
             run_command(["mkdir", subs_directory])
 
             with open(subs_file, 'r') as file:
